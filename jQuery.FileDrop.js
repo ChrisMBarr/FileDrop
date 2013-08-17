@@ -17,7 +17,7 @@
 				perElementOptions.addClassTo = $thisDropArea;
 			}
 
-			_setEvents($thisDropArea, perElementOptions);
+			_setEvents.call(this, $thisDropArea, perElementOptions);
 		});
 	};
 
