@@ -3,10 +3,22 @@
 	// jQuery plugin initialization
 	$.fn.fileDragAndDrop = function (options) {
 
-		var opts = _getOptions(options);
+		var opts = _normalizeOptions(options);
 
 		//Return the elements & loop though them
-		return this.each(_setEvents);
+		return this.each(function(){
+			var $thisDropArea = $(this);
+
+			//Make a copy of the options for each selected element
+			var perElementOptions = opts;
+			
+			//If this option was not set, make it the same as the drop area
+			if (perElementOptions.addClassTo.length===0){
+				perElementOptions.addClassTo = $thisDropArea;
+			}
+
+			_setEvents($thisDropArea, perElementOptions);
+		});
 	};
 
 	$.fn.fileDragAndDrop.defaults = {
@@ -18,9 +30,9 @@
 	//====================================================================
 	//Private
 	//====================================================================
-
+	
 	//The options object is passed in and normalized
-	function _getOptions(options){
+	function _normalizeOptions(options){
 		//If a function was passed in instead of an options object,
 		//just use this as the onFileRead options instead
 		if($.isFunction(options)){
@@ -32,11 +44,6 @@
 		//Create a finalized version of the options
 		var opts = opts = $.extend({}, $.fn.fileDragAndDrop.defaults, options);
 
-		//If this option was not set, make it the same as the drop area
-		if (opts.addClassTo.length===0){
-			opts.addClassTo = $dropArea;
-		}
-
 		//This option MUST be a function or else you can't really do anything...
 		if(!$.isFunction(opts.onFileRead)){
 			throw("The option 'onFileRead' is not set to a function!");
@@ -46,9 +53,7 @@
 	}
 
 	//This is called for each initially selected DOM element
-	function _setEvents(){
-		var $dropArea = $(this);
-
+	function _setEvents($dropArea){
 		//can't bind these events with jQuery!
 		this.addEventListener('dragenter', function(ev){
 			_events._over(ev, $dropArea, opts);
