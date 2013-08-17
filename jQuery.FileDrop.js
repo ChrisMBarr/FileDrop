@@ -1,59 +1,35 @@
-(function($){
-
-	// jQuery plugin initialization
-	$.fn.fileDragAndDrop = function (options) {
-
-		var opts = _normalizeOptions(options);
-
-		//Return the elements & loop though them
-		return this.each(function(){
-			var $thisDropArea = $(this);
-
-			//Make a copy of the options for each selected element
-			var perElementOptions = opts;
-			
-			//If this option was not set, make it the same as the drop area
-			if (perElementOptions.addClassTo.length===0){
-				perElementOptions.addClassTo = $thisDropArea;
-			}
-
-			_setEvents.call(this, $thisDropArea, perElementOptions);
-		});
-	};
-
-	$.fn.fileDragAndDrop.defaults = {
-		overClass: "state-over",	//The class that will be added to an element when files are dragged over the window
-		addClassTo: $([]), 			//Nothing selected by default, in this case the class is added to the selected element
-		onFileRead: null,			//A function to run that will read each file
-		removeDataUriScheme: true,	//Removes "data:;base64," or similar from the beginning of the Base64 string
-		decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will also be true
-	};
-
-	//Extent jQuery.support to detect the support we need here
-	$.support.fileDrop = (function () {
-		return !! window.FileList;
-	})();
-	
+(function ($) {
+	"use strict";
 
 	//====================================================================
 	//Private
 	//====================================================================
 	
+	//Default timer for when to remove the CSS class
+	var exitTimer = null;
+
+	function stopEvent(ev){
+		ev.stopPropagation();
+		ev.preventDefault();
+	}
+
 	//The options object is passed in and normalized
-	function _normalizeOptions(options){
+	function normalizeOptions(options){
 		//If a function was passed in instead of an options object,
 		//just use this as the onFileRead options instead
 		if($.isFunction(options)){
 			var o = {};
 			o.onFileRead = options;
-			options=o; 
+			options=o;
 		}
 
 		//Create a finalized version of the options
-		var opts = opts = $.extend({}, $.fn.fileDragAndDrop.defaults, options);
+		var opts = $.extend({}, $.fn.fileDragAndDrop.defaults, options);
 
 		//If we are decodeing Base64, then we must also remove the data URI Scheme form the beginning of the Base64 string
-		if (opts.decodeBase64) opts.removeDataUriScheme = true;
+		if (opts.decodeBase64){
+			opts.removeDataUriScheme = true;
+		}
 
 		//This option MUST be a function or else you can't really do anything...
 		if(!$.isFunction(opts.onFileRead)){
@@ -63,40 +39,23 @@
 		return opts;
 	}
 
-	//This is called for each initially selected DOM element
-	function _setEvents($dropArea, opts){
-		//can't bind these events with jQuery!
-		this.addEventListener('dragenter', function(ev){
-			_events._over(ev, $dropArea, opts);
-		}, false);
-		this.addEventListener('dragover', function(ev){
-			_events._exit(ev, $dropArea, opts);
-		}, false);
-		this.addEventListener('drop', function(ev){
-			_events._drop(ev, $dropArea, opts);
-		}, false);
-	}
-
-	//Default timer for when to remove the CSS class
-	var _exitTimer = null;
-
 	//
-	var _events = {
-		_over : function(ev, $dropArea, opts){
+	var events = {
+		over : function(ev, $dropArea, opts){
 			$(opts.addClassTo).addClass(opts.overClass);
-			_stopEvent.apply(ev);
+			stopEvent(ev);
 		},
-		_exit : function(ev, $dropArea, opts){
+		exit : function(ev, $dropArea, opts){
 			//Create a timer so that the CSS class is only removed after 100ms
-			clearTimeout(_exitTimer);
-			_exitTimer=setTimeout(function(){
+			clearTimeout(exitTimer);
+			exitTimer=setTimeout(function(){
 				$(opts.addClassTo).removeClass(opts.overClass);
 			}, 100);
-			_stopEvent.apply(ev);
+			stopEvent(ev);
 		},
-		_drop : function(ev, $dropArea, opts){
+		drop : function(ev, $dropArea, opts){
 			$(opts.addClassTo).removeClass(opts.overClass);
-			_stopEvent.apply(ev);
+			stopEvent(ev);
 			var fileList = ev.dataTransfer.files;
 
 			//Create an array of file objects for us to fill in
@@ -109,7 +68,7 @@
 				var reader = new window.FileReader();
 
 				//Create a closure so we can properly pass in the file information since this will complete async!
-				var completeFn = (_handleFile)(fileList[i], fileArray, fileList.length, opts);
+				var completeFn = (handleFile)(fileList[i], fileArray, fileList.length, opts);
 
 				//Different browsers impliment this in different ways, but call the complete function when the file has finished being read
 				if(reader.addEventListener) {
@@ -126,14 +85,36 @@
 		}
 	};
 
+	//This is called for each initially selected DOM element
+	function setEvents(el, opts){
+		var $dropArea = $(el);
+
+		//can't bind these events with jQuery!
+		el.addEventListener('dragenter', function(ev){
+			events.over(ev, $dropArea, opts);
+		}, false);
+		el.addEventListener('dragover', function(ev){
+			events.exit(ev, $dropArea, opts);
+		}, false);
+		el.addEventListener('drop', function(ev){
+			events.drop(ev, $dropArea, opts);
+		}, false);
+	}
+
 	//This is the complete function for reading a file,
-	function _handleFile(theFile, fileArray, fileCount, opts) {
+	function handleFile(theFile, fileArray, fileCount, opts) {
 		//When called, it has to return a function back up to the listener event
 		return function(ev){
 
 			var fileData = ev.target.result;
-			if(opts.removeDataUriScheme) fileData = fileData.replace(/^data:.*;base64,/,"");
-			if(opts.decodeBase64) fileData = _decodeBase64(fileData);
+			
+			if(opts.removeDataUriScheme){
+				fileData = fileData.replace(/^data:.*;base64,/,"");
+			}
+			
+			if(opts.decodeBase64){
+				fileData = decodeBase64(fileData);
+			}
 
 			//Add the current file to the array
 			fileArray.push({
@@ -145,41 +126,66 @@
 			});
 			
 			//Once the correct number of items have been put in the array, call the completion function		
-			if(fileArray.length == fileCount && $.isFunction(opts.onFileRead)){
-				opts.onFileRead(fileArray, opts)
+			if(fileArray.length === fileCount && $.isFunction(opts.onFileRead)){
+				opts.onFileRead(fileArray, opts);
 			}
-		}
+		};
 	}
 
-	function _handleReaderLoadEnd(ev, fullFileName, opts) {
-		var data = ev.target.result;
-		if(data.length>1 && $.isFunction(opts.onFileRead)){
-			opts.onFileRead(data, fullFileName)
-		}
-	}
-
-	function _stopEvent(){
-		this.stopPropagation();
-		this.preventDefault();
-	}
-
-	function _decodeBase64(str){
+	function decodeBase64(str){
 		var decoded = window.atob( str );
 		try{
-			return decodeURIComponent(escape(decoded));
+			return decodeURIComponent(window.escape(decoded));
 		}catch(ex){
-			return decoded;
+			return "";
 		}
 	}
+
+	//====================================================================
+	//Public
+	//====================================================================
+
+	// jQuery plugin initialization
+	$.fn.fileDragAndDrop = function (options) {
+
+		var opts = normalizeOptions(options);
+
+		//Return the elements & loop though them
+		return this.each(function () {
+			//Make a copy of the options for each selected element
+			var perElementOptions = opts;
+			
+			//If this option was not set, make it the same as the drop area
+			if (perElementOptions.addClassTo.length===0){
+				perElementOptions.addClassTo = $(this);
+			}
+
+			setEvents(this, perElementOptions);
+		});
+	};
+
+	$.fn.fileDragAndDrop.defaults = {
+		overClass: "state-over",	//The class that will be added to an element when files are dragged over the window
+		addClassTo: $([]),			//Nothing selected by default, in this case the class is added to the selected element
+		onFileRead: null,			//A function to run that will read each file
+		removeDataUriScheme: true,	//Removes "data:;base64," or similar from the beginning of the Base64 string
+		decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will also be true
+	};
+
+	//Extent jQuery.support to detect the support we need here
+	$.support.fileDrop = (function () {
+		return !! window.FileList;
+	})();
+		
 })(jQuery);
 
 
 //Add Base64 decode ability if the browser does not support it already
 //NOTE: The below code can be removed if you do not plan on targeting IE9!
 (function(window){
-
 	//Via: http://phpjs.org/functions/base64_decode/
 	function base64_decode (data) {
+		/*jshint bitwise: false, eqeqeq:false*/
 		var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 		var o1, o2, o3, h1, h2, h3, h4, bits, i = 0,
 		ac = 0,
@@ -219,7 +225,7 @@
 	}
 
 	if(!window.atob){
-		window.atob = base64_decode
+		window.atob = base64_decode;
 	}
 
 })(window);
