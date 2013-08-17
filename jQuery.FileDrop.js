@@ -29,6 +29,12 @@
 		decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will also be true
 	};
 
+	//Extent jQuery.support to detect the support we need here
+	$.support.fileDrop = (function () {
+		return !! window.FileList;
+	})();
+	
+
 	//====================================================================
 	//Private
 	//====================================================================
@@ -100,7 +106,7 @@
 			for(var i = 0; i <= fileList.length; i++){
 
 				//Create a new file reader to read the file
-				var reader = new FileReader();
+				var reader = new window.FileReader();
 
 				//Create a closure so we can properly pass in the file information since this will complete async!
 				var completeFn = (_handleFile)(fileList[i], fileArray, fileList.length, opts);
