@@ -31,6 +31,9 @@
 			opts.removeDataUriScheme = true;
 		}
 
+		//This allows for string or jQuery selectors to be used
+		opts.addClassTo = $(opts.addClassTo);
+
 		//This option MUST be a function or else you can't really do anything...
 		if(!$.isFunction(opts.onFileRead)){
 			throw('The option "onFileRead" is not set to a function!');
