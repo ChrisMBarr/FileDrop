@@ -24,7 +24,9 @@
 	$.fn.fileDragAndDrop.defaults = {
 		overClass: "state-over",	//The class that will be added to an element when files are dragged over the window
 		addClassTo: $([]), 			//Nothing selected by default, in this case the class is added to the selected element
-		onFileRead: null 			//A function to run that will read each file
+		onFileRead: null,			//A function to run that will read each file
+		removeDataUriScheme: true,	//Removes "data:;base64," or similar from the beginning of the Base64 string
+		decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will also be true
 	};
 
 	//====================================================================
@@ -43,6 +45,9 @@
 
 		//Create a finalized version of the options
 		var opts = opts = $.extend({}, $.fn.fileDragAndDrop.defaults, options);
+
+		//If we are decodeing Base64, then we must also remove the data URI Scheme form the beginning of the Base64 string
+		if (opts.decodeBase64) opts.removeDataUriScheme = true;
 
 		//This option MUST be a function or else you can't really do anything...
 		if(!$.isFunction(opts.onFileRead)){
@@ -76,10 +81,11 @@
 			_stopEvent.apply(ev);
 		},
 		_exit : function(ev, $dropArea, opts){
+			//Create a timer so that the CSS class is only removed after 100ms
 			clearTimeout(_exitTimer);
 			_exitTimer=setTimeout(function(){
 				$(opts.addClassTo).removeClass(opts.overClass);
-			},100);
+			}, 100);
 			_stopEvent.apply(ev);
 		},
 		_drop : function(ev, $dropArea, opts){
@@ -118,13 +124,18 @@
 	function _handleFile(theFile, fileArray, fileCount, opts) {
 		//When called, it has to return a function back up to the listener event
 		return function(ev){
+
+			var fileData = ev.target.result;
+			if(opts.removeDataUriScheme) fileData = fileData.replace(/^data:.*;base64,/,"");
+			if(opts.decodeBase64) fileData = _decodeBase64(fileData);
+
 			//Add the current file to the array
 			fileArray.push({
 				name: theFile.name,
 				size: theFile.size,
 				type: theFile.type,
 				lastModified: theFile.lastModifiedDate,
-				data: ev.target.result
+				data: fileData
 			});
 			
 			//Once the correct number of items have been put in the array, call the completion function		
@@ -145,4 +156,64 @@
 		this.stopPropagation();
 		this.preventDefault();
 	}
+
+	function _decodeBase64(str){
+		var decoded = window.atob( str );
+		try{
+			return decodeURIComponent(escape(decoded));
+		}catch(ex){
+			return decoded;
+		}
+	}
 })(jQuery);
+
+
+//Add Base64 decode ability if the browser does not support it already
+//NOTE: The below code can be removed if you do not plan on targeting IE9!
+(function(window){
+
+	//Via: http://phpjs.org/functions/base64_decode/
+	function base64_decode (data) {
+		var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+		var o1, o2, o3, h1, h2, h3, h4, bits, i = 0,
+		ac = 0,
+		dec = "",
+		tmp_arr = [];
+
+		if (!data) {
+			return data;
+		}
+
+		data += '';
+
+		do { // unpack four hexets into three octets using index points in b64
+			h1 = b64.indexOf(data.charAt(i++));
+			h2 = b64.indexOf(data.charAt(i++));
+			h3 = b64.indexOf(data.charAt(i++));
+			h4 = b64.indexOf(data.charAt(i++));
+
+			bits = h1 << 18 | h2 << 12 | h3 << 6 | h4;
+
+			o1 = bits >> 16 & 0xff;
+			o2 = bits >> 8 & 0xff;
+			o3 = bits & 0xff;
+
+			if (h3 == 64) {
+				tmp_arr[ac++] = String.fromCharCode(o1);
+			} else if (h4 == 64) {
+				tmp_arr[ac++] = String.fromCharCode(o1, o2);
+			} else {
+				tmp_arr[ac++] = String.fromCharCode(o1, o2, o3);
+			}
+		} while (i < data.length);
+
+		dec = tmp_arr.join('');
+
+		return dec;
+	}
+
+	if(!window.atob){
+		window.atob = base64_decode
+	}
+
+})(window);
