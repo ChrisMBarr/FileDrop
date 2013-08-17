@@ -53,7 +53,7 @@
 	}
 
 	//This is called for each initially selected DOM element
-	function _setEvents($dropArea){
+	function _setEvents($dropArea, opts){
 		//can't bind these events with jQuery!
 		this.addEventListener('dragenter', function(ev){
 			_events._over(ev, $dropArea, opts);
