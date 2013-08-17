@@ -1,9 +1,26 @@
 (function($){
-	var _exitTimer = null;
 
 	// jQuery plugin initialization
 	$.fn.fileDragAndDrop = function (options) {
 
+		var opts = _getOptions(options);
+
+		//Return the elements & loop though them
+		return this.each(_setEvents);
+	};
+
+	$.fn.fileDragAndDrop.defaults = {
+		overClass: "state-over",	//The class that will be added to an element when files are dragged over the window
+		addClassTo: $([]), 			//Nothing selected by default, in this case the class is added to the selected element
+		onFileRead: null 			//A function to run that will read each file
+	};
+
+	//====================================================================
+	//Private
+	//====================================================================
+
+	//The options object is passed in and normalized
+	function _getOptions(options){
 		//If a function was passed in instead of an options object,
 		//just use this as the onFileRead options instead
 		if($.isFunction(options)){
@@ -12,37 +29,42 @@
 			options=o; 
 		}
 
-		//Return the elements & loop though them
-		return this.each(function(){
-			var $dropArea = $(this);
-			
-			//Create a finalized version of the options
-			var opts = opts = $.extend({}, $.fn.fileDragAndDrop.defaults, options);
+		//Create a finalized version of the options
+		var opts = opts = $.extend({}, $.fn.fileDragAndDrop.defaults, options);
 
-			//If this option was not set, make it the same as the drop area
-			if (opts.addClassTo.length===0){
-				opts.addClassTo = $dropArea;
-			}
+		//If this option was not set, make it the same as the drop area
+		if (opts.addClassTo.length===0){
+			opts.addClassTo = $dropArea;
+		}
 
-			//can't bind these events with jQuery!
-			this.addEventListener('dragenter', function(ev){
-				_events._over(ev, $dropArea, opts);
-			}, false);
-			this.addEventListener('dragover', function(ev){
-				_events._exit(ev, $dropArea, opts);
-			}, false);
-			this.addEventListener('drop', function(ev){
-				_events._drop(ev, $dropArea, opts);
-			}, false);
-		});
-	};
+		//This option MUST be a function or else you can't really do anything...
+		if(!$.isFunction(opts.onFileRead)){
+			throw("The option 'onFileRead' is not set to a function!");
+		}
 
-	$.fn.fileDragAndDrop.defaults = {
-		overClass: "over",
-		addClassTo: $([]),
-		onFileRead: null
-	};
+		return opts;
+	}
 
+	//This is called for each initially selected DOM element
+	function _setEvents(){
+		var $dropArea = $(this);
+
+		//can't bind these events with jQuery!
+		this.addEventListener('dragenter', function(ev){
+			_events._over(ev, $dropArea, opts);
+		}, false);
+		this.addEventListener('dragover', function(ev){
+			_events._exit(ev, $dropArea, opts);
+		}, false);
+		this.addEventListener('drop', function(ev){
+			_events._drop(ev, $dropArea, opts);
+		}, false);
+	}
+
+	//Default timer for when to remove the CSS class
+	var _exitTimer = null;
+
+	//
 	var _events = {
 		_over : function(ev, $dropArea, opts){
 			$(opts.addClassTo).addClass(opts.overClass);
@@ -88,7 +110,6 @@
 	};
 
 	//This is the complete function for reading a file,
-
 	function _handleFile(theFile, fileArray, fileCount, opts) {
 		//When called, it has to return a function back up to the listener event
 		return function(ev){
