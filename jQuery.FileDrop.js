@@ -1,5 +1,5 @@
 (function ($) {
-	"use strict";
+	'use strict';
 
 	//====================================================================
 	//Private
@@ -33,7 +33,7 @@
 
 		//This option MUST be a function or else you can't really do anything...
 		if(!$.isFunction(opts.onFileRead)){
-			throw("The option 'onFileRead' is not set to a function!");
+			throw('The option "onFileRead" is not set to a function!');
 		}
 
 		return opts;
@@ -109,7 +109,7 @@
 			var fileData = ev.target.result;
 			
 			if(opts.removeDataUriScheme){
-				fileData = fileData.replace(/^data:.*;base64,/,"");
+				fileData = fileData.replace(/^data:.*;base64,/,'');
 			}
 			
 			if(opts.decodeBase64){
@@ -137,7 +137,7 @@
 		try{
 			return decodeURIComponent(window.escape(decoded));
 		}catch(ex){
-			return "";
+			return '';
 		}
 	}
 
@@ -165,10 +165,10 @@
 	};
 
 	$.fn.fileDragAndDrop.defaults = {
-		overClass: "state-over",	//The class that will be added to an element when files are dragged over the window
-		addClassTo: $([]),			//Nothing selected by default, in this case the class is added to the selected element
+		overClass: 'state-over',	//The class that will be added to an element when files are dragged over the window
+		addClassTo: '',			//Nothing selected by default, in this case the class is added to the selected element
 		onFileRead: null,			//A function to run that will read each file
-		removeDataUriScheme: true,	//Removes "data:;base64," or similar from the beginning of the Base64 string
+		removeDataUriScheme: true,	//Removes 'data:;base64,' or similar from the beginning of the Base64 string
 		decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will also be true
 	};
 
@@ -186,10 +186,10 @@
 	//Via: http://phpjs.org/functions/base64_decode/
 	function base64_decode (data) {
 		/*jshint bitwise: false, eqeqeq:false*/
-		var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+		var b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 		var o1, o2, o3, h1, h2, h3, h4, bits, i = 0,
 		ac = 0,
-		dec = "",
+		dec = '',
 		tmp_arr = [];
 
 		if (!data) {
