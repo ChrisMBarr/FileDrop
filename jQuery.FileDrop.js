@@ -73,18 +73,18 @@
 	var _events = {
 		_over : function(ev, $dropArea, opts){
 			$(opts.addClassTo).addClass(opts.overClass);
-			_stopEvent(ev);
+			_stopEvent.apply(ev);
 		},
 		_exit : function(ev, $dropArea, opts){
 			clearTimeout(_exitTimer);
 			_exitTimer=setTimeout(function(){
 				$(opts.addClassTo).removeClass(opts.overClass);
 			},100);
-			_stopEvent(ev);
+			_stopEvent.apply(ev);
 		},
 		_drop : function(ev, $dropArea, opts){
 			$(opts.addClassTo).removeClass(opts.overClass);
-			_stopEvent(ev);
+			_stopEvent.apply(ev);
 			var fileList = ev.dataTransfer.files;
 
 			//Create an array of file objects for us to fill in
@@ -141,8 +141,8 @@
 		}
 	}
 
-	function _stopEvent(ev){
-		ev.stopPropagation();
-		ev.preventDefault();
+	function _stopEvent(){
+		this.stopPropagation();
+		this.preventDefault();
 	}
 })(jQuery);
