@@ -24,7 +24,7 @@
 		}
 
 		//Create a finalized version of the options
-		var opts = $.extend({}, $.fn.fileDragAndDrop.defaults, options);
+		var opts = $.extend({}, $.fn.fileDrop.defaults, options);
 
 		//If we are decodeing Base64, then we must also remove the data URI Scheme form the beginning of the Base64 string
 		if (opts.decodeBase64){
@@ -149,7 +149,7 @@
 	//====================================================================
 
 	// jQuery plugin initialization
-	$.fn.fileDragAndDrop = function (options) {
+	$.fn.fileDrop = function (options) {
 
 		var opts = normalizeOptions(options);
 
@@ -167,7 +167,7 @@
 		});
 	};
 
-	$.fn.fileDragAndDrop.defaults = {
+	$.fn.fileDrop.defaults = {
 		overClass: 'state-over',	//The class that will be added to an element when files are dragged over the window
 		addClassTo: '',			//Nothing selected by default, in this case the class is added to the selected element
 		onFileRead: null,			//A function to run that will read each file
