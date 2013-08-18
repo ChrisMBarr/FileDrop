@@ -169,7 +169,7 @@
 
 	$.fn.fileDrop.defaults = {
 		overClass: 'state-over',	//The class that will be added to an element when files are dragged over the window
-		addClassTo: '',			//Nothing selected by default, in this case the class is added to the selected element
+		addClassTo: null,			//Nothing selected by default, in this case the class is added to the selected element
 		onFileRead: null,			//A function to run that will read each file
 		removeDataUriScheme: true,	//Removes 'data:;base64,' or similar from the beginning of the Base64 string
 		decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will also be true
