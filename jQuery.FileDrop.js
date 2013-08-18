@@ -112,7 +112,7 @@
 			var fileData = ev.target.result;
 			
 			if(opts.removeDataUriScheme){
-				fileData = fileData.replace(/^data:.*;base64,/,'');
+				fileData = $.removeUriScheme(fileData);
 			}
 			
 			if(opts.decodeBase64){
@@ -173,6 +173,11 @@
 		onFileRead: null,			//A function to run that will read each file
 		removeDataUriScheme: true,	//Removes 'data:;base64,' or similar from the beginning of the Base64 string
 		decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will also be true
+	};
+
+	//Extend jQuery to allow for this to be a public function
+	$.removeUriScheme = function(str){
+		return str.replace(/^data:.*;base64,/,'');
 	};
 
 	//Extent jQuery.support to detect the support we need here
