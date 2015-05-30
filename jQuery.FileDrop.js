@@ -8,54 +8,30 @@
 (function ($) {
     'use strict';
 
-    //Extend jQuery to allow for this to be a public function
-    $.removeUriScheme = function (str) {
-        return str.replace(/^data:.*;base64,/, '');
-    };
-
-    //Extent jQuery.support to detect the support we need here
-    $.support.fileDrop = (function () {
-        return !!window.FileList;
-    })();
+    var exitTimer = null;
     
-    // jQuery plugin initialization
-    $.fn.fileDrop = function (options) {
-        var opts = normalizeOptions(options);
+    function stopEvent(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+    }
 
-        //Return the elements & loop though them
-        return this.each(function () {
-            //Make a copy of the options for each selected element
-            var perElementOptions = opts;
-			
-            //If this option was not set, make it the same as the drop area
-            if (perElementOptions.addClassTo.length === 0) {
-                perElementOptions.addClassTo = $(this);
-            }
-
-            setEvents(this, perElementOptions);
-        });
-    };
-
-    $.fn.fileDrop.defaults = {
-        overClass: 'state-over',	//The class that will be added to an element when files are dragged over the window
-        addClassTo: null,			//Nothing selected by default, in this case the class is added to the selected element
-        onFileRead: null,			//A function to run that will read each file
-        removeDataUriScheme: true,	//Removes 'data:;base64,' or similar from the beginning of the Base64 string
-        decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will be set to true
-    };
-    
-    //=============================================================================================
-    
-    var _exitTimer = null;
+    function decodeBase64String(str) {
+        var decoded = window.atob(str);
+        try {
+            return decodeURIComponent(window.escape(decoded));
+        } catch (ex) {
+            return '';
+        }
+    }
     
     //The options object is passed in and normalized
     function normalizeOptions(options) {
         //If a function was passed in instead of an options object,
         //just use this as the onFileRead options instead
         if ($.isFunction(options)) {
-            var o = {};
-            o.onFileRead = options;
-            options = o;
+            options = {
+                onFileRead: options
+            };
         }
 
         //Create a finalized version of the options
@@ -89,8 +65,8 @@
 
         el.addEventListener('dragover', function (ev) {
             //Mouse exit element
-            clearTimeout(_exitTimer);
-            _exitTimer = setTimeout(function () {
+            clearTimeout(exitTimer);
+            exitTimer = setTimeout(function () {
                 $(opts.addClassTo).removeClass(opts.overClass);
             }, 100);
             stopEvent(ev);
@@ -160,18 +136,46 @@
             }
         };
     }
+    
+    
+    //=============================================================================================
+    
+    
+    //Extend jQuery to allow for this to be a public function
+    $.removeUriScheme = function (str) {
+        return str.replace(/^data:.*;base64,/, '');
+    };
 
-    function stopEvent(ev) {
-        ev.stopPropagation();
-        ev.preventDefault();
-    }
+    //Extent jQuery.support to detect the support we need here
+    $.support.fileDrop = (function () {
+        return !!window.FileList;
+    })();
+    
+    // jQuery plugin initialization
+    $.fn.fileDrop = function (options) {
+        var opts = normalizeOptions(options);
 
-    function decodeBase64String(str) {
-        var decoded = window.atob(str);
-        try {
-            return decodeURIComponent(window.escape(decoded));
-        } catch (ex) {
-            return '';
-        }
-    }
+        //Return the elements & loop though them
+        return this.each(function () {
+            //Make a copy of the options for each selected element
+            var perElementOptions = opts;
+			
+            //If this option was not set, make it the same as the drop area
+            if (perElementOptions.addClassTo.length === 0) {
+                perElementOptions.addClassTo = $(this);
+            }
+
+            setEvents(this, perElementOptions);
+        });
+    };
+
+    $.fn.fileDrop.defaults = {
+        overClass: 'state-over',	//The class that will be added to an element when files are dragged over the window
+        addClassTo: null,			//Nothing selected by default, in this case the class is added to the selected element
+        onFileRead: null,			//A function to run that will read each file
+        removeDataUriScheme: true,	//Removes 'data:;base64,' or similar from the beginning of the Base64 string
+        decodeBase64: false			//Decodes the Base64 into the raw file data. NOTE: when this is true, removeDataUriScheme will be set to true
+    };
+
+
 })(jQuery);
